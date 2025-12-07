@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 id="category-name" class="text-warning"></h1>
+    <div id="games-list" class="row">
+        <!-- Games will be loaded here dynamically -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoryId = {{ category_id }};
+        
+        // Fetch category details to display the name
+        fetch(`/api/categories/${categoryId}`)
+            .then(response => response.json())
+            .then(category => {
+                const categoryName = document.getElementById('category-name');
+                if (category && category.name) {
+                    categoryName.textContent = `Games in ${category.name}`;
+                } else {
+                    categoryName.textContent = 'Category not found';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching category details:', error);
+                const categoryName = document.getElementById('category-name');
+                categoryName.textContent = 'Error loading category';
+            });
+
+        // Fetch games in the category
+        fetch(`/api/categories/${categoryId}/games`)
+            .then(response => response.json())
+            .then(data => {
+                const gamesList = document.getElementById('games-list');
+                if (data.length === 0) {
+                    gamesList.innerHTML = '<p>No games found in this category.</p>';
+                    return;
+                }
+                data.forEach(game => {
+                    const gameCard = `
+                        <div class="col-md-4 mb-4">
+                            <div class="card bg-dark text-light border-warning">
+                                <img src="${game.image_path || '/static/images/naruto_bg.png'}" class="card-img-top" alt="${game.name}">
+                                <div class="card-body">
+                                    <h5 class="card-title text-warning">${game.name}</h5>
+                                    <p class="card-text">${game.description || ''}</p>
+                                    <a href="/games/${game.id}" class="btn btn-warning">Play Game</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    gamesList.innerHTML += gameCard;
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching games:', error);
+                const gamesList = document.getElementById('games-list');
+                gamesList.innerHTML = '<p>Error loading games.</p>';
+            });
+    });
+</script>
+{% endblock %}

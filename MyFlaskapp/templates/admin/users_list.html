@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}User List{% endblock %}
+
+{% block content %}
+<div class="card bg-dark text-white border-secondary">
+    <div class="card-header bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center">
+        <h3>User List</h3>
+        <a href="{{ url_for('admin.add_user') }}" class="btn btn-outline-light">+ Add User</a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered table-dark">
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Mobile</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.user_id }}</td>
+                        <td>{{ user.firstname }} {{ user.lastname }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.user_type }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.mobile_number }}</td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('admin.update_user', id=user.user_id) }}"
+                                    class="btn btn-warning btn-sm">Edit</a>
+                                <form action="{{ url_for('admin.delete_user') }}" method="post"
+                                    onsubmit="return confirm('Are you sure?');">
+                                    <input type="hidden" name="user_id" value="{{ user.user_id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

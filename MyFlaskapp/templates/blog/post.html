@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card bg-dark text-white border-secondary">
+            <div class="card-body">
+                <h1 class="card-title display-5">{{ post.title }}</h1>
+                <p class="text-muted">
+                    By <strong>{{ post.username }}</strong> | {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <hr>
+                <div class="card-text text-wrap">
+                    {{ post.content }}
+                </div>
+                <hr>
+                <a href="{{ url_for('blog.index') }}" class="btn btn-secondary">Back to Archives</a>
+
+                {% if current_user.is_authenticated and current_user.role == 'Admin' %}
+                <a href="{{ url_for('blog.edit', id=post.id) }}" class="btn btn-warning">Edit Scroll</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

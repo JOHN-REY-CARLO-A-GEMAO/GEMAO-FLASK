@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="text-warning">Games</h3>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.games_create') }}" class="btn btn-warning">Add Game</a>
+        <form method="post" action="{{ url_for('admin.games_sync') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-info">Sync from folder</button>
+        </form>
+    </div>
+    </div>
+
+<div class="card bg-dark text-white border-secondary">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>File Path</th>
+                        <th>Image Path</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in games %}
+                    <tr>
+                        <td>{{ g.id }}</td>
+                        <td>{{ g.name }}</td>
+                        <td>{{ g.description }}</td>
+                        <td>{{ g.file_path }}</td>
+                        <td>{{ g.image_path }}</td>
+                        <td class="d-flex gap-2">
+                            <a href="{{ url_for('admin.games_edit', game_id=g.id) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                            <form method="post" action="{{ url_for('admin.games_delete', game_id=g.id) }}" onsubmit="return confirm('Delete this game?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

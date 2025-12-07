@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-warning">Game Categories</h1>
+    <div id="categories-list" class="row">
+        <!-- Categories will be loaded here dynamically -->
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/categories')
+            .then(response => response.json())
+            .then(data => {
+                const categoriesList = document.getElementById('categories-list');
+                if (data.length === 0) {
+                    categoriesList.innerHTML = '<p>No categories found.</p>';
+                    return;
+                }
+                data.forEach(category => {
+                    const categoryCard = `
+                        <div class="col-md-4 mb-4">
+                            <div class="card bg-dark text-light border-warning">
+                                <div class="card-body">
+                                    <h5 class="card-title text-warning">${category.name}</h5>
+                                    <p class="card-text">${category.description || ''}</p>
+                                    <a href="/categories/${category.id}" class="btn btn-warning">View Games</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    categoriesList.innerHTML += categoryCard;
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching categories:', error);
+                const categoriesList = document.getElementById('categories-list');
+                categoriesList.innerHTML = '<p>Error loading categories.</p>';
+            });
+    });
+</script>
+{% endblock %}

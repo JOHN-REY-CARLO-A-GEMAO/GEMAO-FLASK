@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Naruto Works System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+
+<body class="bg-dark text-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-3 border-warning">
+        <div class="container">
+            <a class="navbar-brand text-warning fw-bold fs-4" href="{{ url_for('main.index') }}">🌀 NarutoWorks</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('blog.index') }}">Scroll of Knowledge</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('main.categories') }}">Categories</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'Admin' %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.dashboard') }}">Hokage Panel</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('user.dashboard') }}">Shinobi Dash</a>
+                        </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('user.profile') }}">Ninja Info Cards</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link text-danger" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.register') }}">Register</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" role="alert">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window._AmbientAudioUrl = "{{ url_for('main.ambient') }}";
+        window._AmbientAudioTitle = "Naruto Theme - The Raising Fighting Spirit";
+    </script>
+    <script src="{{ url_for('static', filename='js/audio.js') }}" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.forEach(function(el){ new bootstrap.Tooltip(el); });
+            } catch(e) {}
+            if (!window.AudioManager) return;
+            window.AudioManager.init();
+            var playBtn = document.getElementById('audio-toggle');
+            var muteBtn = document.getElementById('audio-mute');
+            var vol = document.getElementById('audio-volume');
+            if (!playBtn || !muteBtn || !vol) return;
+            function sync() {
+                var m = window.AudioManager.getMuted();
+                muteBtn.textContent = m ? 'Unmute' : 'Mute';
+            }
+            playBtn.addEventListener('click', function() {
+                window.AudioManager.startAmbient();
+            });
+            muteBtn.addEventListener('click', function() {
+                var m = window.AudioManager.getMuted();
+                window.AudioManager.setMuted(!m);
+                sync();
+            });
+            vol.addEventListener('input', function() {
+                var v = parseFloat(this.value);
+                window.AudioManager.setMasterVolume(v);
+            });
+            sync();
+        });
+    </script>
+</body>
+
+</html>

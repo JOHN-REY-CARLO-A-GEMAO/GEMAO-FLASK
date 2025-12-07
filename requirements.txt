@@ -1,0 +1,7 @@
+Flask
+Flask-Login
+Flask-Mail
+Flask-WTF
+mysql-connector-python
+Pillow
+pygame

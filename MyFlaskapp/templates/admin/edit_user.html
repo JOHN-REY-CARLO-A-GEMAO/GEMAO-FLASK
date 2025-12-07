@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="card bg-dark text-white border-secondary">
+    <div class="card-header bg-dark border-bottom border-secondary">
+        <h3>Edit User: {{ user.username }}</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="firstname" class="form-label">First Name</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="firstname" name="firstname" value="{{ user.firstname }}"
+                        required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="lastname" class="form-label">Last Name</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="lastname" name="lastname" value="{{ user.lastname }}"
+                        required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="username" name="username" value="{{ user.username }}"
+                        required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password"
+                        value="{{ user.password }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control bg-dark text-white border-secondary" id="email" name="email" value="{{ user.email }}" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="mobile_number" class="form-label">Mobile Number</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary" id="mobile_number" name="mobile_number"
+                        value="{{ user.mobile_number }}" required>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="birthdate" class="form-label">Birthdate</label>
+                    <input type="date" class="form-control bg-dark text-white border-secondary" id="birthdate" name="birthdate" value="{{ user.birthdate }}"
+                        required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="user_type" class="form-label">Role</label>
+                    <select class="form-control bg-dark text-white border-secondary" id="user_type" name="user_type">
+                        <option value="user" {% if user.user_type=='user' %}selected{% endif %}>User</option>
+                        <option value="cashier" {% if user.user_type=='cashier' %}selected{% endif %}>Cashier</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label">Address</label>
+                <input type="text" class="form-control bg-dark text-white border-secondary" id="address" name="address" value="{{ user.address }}">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update User</button>
+            <a href="{{ url_for('admin.users_list') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

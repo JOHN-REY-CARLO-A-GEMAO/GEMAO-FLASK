@@ -1,0 +1,70 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<h2 class="mb-4 text-warning">Manage API Keys</h2>
+
+<div class="card bg-dark text-white border-secondary mb-4">
+    <div class="card-header bg-dark border-bottom border-secondary">
+        <span>Create New API Key</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('admin.create_api_key') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+                <label for="new_api_user_id" class="form-label">User ID (Optional, if key is for a specific user)</label>
+                <input type="number" class="form-control bg-dark text-white border-secondary" id="new_api_user_id" name="user_id">
+            </div>
+            <div class="mb-3">
+                <label for="new_api_permissions" class="form-label">Permissions (e.g., read:users, write:data)</label>
+                <input type="text" class="form-control bg-dark text-white border-secondary" id="new_api_permissions" name="permissions">
+            </div>
+            <div class="mb-3">
+                <label for="new_api_expires_at" class="form-label">Expires At (YYYY-MM-DD HH:MM:SS, Optional)</label>
+                <input type="datetime-local" class="form-control bg-dark text-white border-secondary" id="new_api_expires_at" name="expires_at">
+            </div>
+            <button type="submit" class="btn btn-warning">Generate Key</button>
+        </form>
+    </div>
+</div>
+
+<div class="card bg-dark text-white border-secondary">
+    <div class="card-header bg-dark border-bottom border-secondary d-flex justify-content-between align-items-center">
+        <span>Existing API Keys</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User ID</th>
+                        <th>Key Hash</th>
+                        <th>Permissions</th>
+                        <th>Created At</th>
+                        <th>Expires At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key in api_keys %}
+                    <tr>
+                        <td>{{ key.id }}</td>
+                        <td>{{ key.user_id if key.user_id else 'N/A' }}</td>
+                        <td><span title="{{ key.key_hash }}">{{ key.key_hash[:10] }}...</span></td>
+                        <td>{{ key.permissions if key.permissions else 'N/A' }}</td>
+                        <td>{{ key.created_at }}</td>
+                        <td>{{ key.expires_at if key.expires_at else 'Never' }}</td>
+                        <td>
+                            <form method="post" action="{{ url_for('admin.delete_api_key', key_id=key.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this API key?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

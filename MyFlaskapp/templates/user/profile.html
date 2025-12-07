@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card bg-dark text-white border-secondary">
+            <div class="card-header border-bottom border-secondary">
+                <h3>Ninja Info Cards</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ user.firstname }}" disabled>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Middle Name</label>
+                            <input type="text" name="middlename" class="form-control bg-dark text-white border-secondary"
+                                value="{{ user.middlename or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ user.lastname }}" disabled>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Birthdate</label>
+                            <input type="date" name="birthdate" class="form-control bg-dark text-white border-secondary" value="{{ user.birthday }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Age</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" value="{{ user.age or 'Unknown' }}" disabled>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contact Number (Scroll link)</label>
+                        <input type="text" name="contact" class="form-control bg-dark text-white border-secondary" value="{{ user.contact_number or '' }}">
+                    </div>
+
+                    <div class="mb-4">
+                        <h4 class="text-warning">Notification Preferences</h4>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" name="email_notifications" {% if preferences.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="emailNotifications">Email Notifications</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="smsNotifications" name="sms_notifications" {% if preferences.sms_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="smsNotifications">SMS Notifications</label>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            {% set pic_url = url_for('user.get_profile_picture', user_id=user.id) %}
+                            <img id="profilePreview" src="{{ pic_url }}" onerror="this.style.display='none'" class="img-fluid rounded" style="max-height: 200px;" alt="Profile Picture">
+                            <div id="fallbackAvatar" class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 200px; height: 200px; display: none;">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+                            </div>
+                            <div class="mt-3">
+                                <input id="fileInput" type="file" accept="image/png,image/jpeg,image/gif" class="form-control">
+                                <div class="d-flex gap-2 mt-2">
+                                    <button id="clearBtn" type="button" class="btn btn-outline-light">Clear</button>
+                                    <button id="uploadBtn" type="button" class="btn btn-warning">Upload</button>
+                                </div>
+                                <div id="uploadStatus" class="mt-2 text-start"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning">Update Info</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+const fileInput = document.getElementById('fileInput');
+const previewImg = document.getElementById('profilePreview');
+const fallbackAvatar = document.getElementById('fallbackAvatar');
+const clearBtn = document.getElementById('clearBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const statusBox = document.getElementById('uploadStatus');
+
+function showFallback() {
+  previewImg.style.display = 'none';
+  fallbackAvatar.style.display = 'flex';
+}
+if (previewImg && previewImg.complete && previewImg.naturalWidth === 0) {
+  showFallback();
+}
+
+fileInput.addEventListener('change', () => {
+  statusBox.textContent = '';
+  const file = fileInput.files[0];
+  if (!file) return;
+  const allowed = ['image/jpeg', 'image/png', 'image/gif'];
+  if (!allowed.includes(file.type)) {
+    statusBox.textContent = 'Unsupported file type';
+    fileInput.value = '';
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    statusBox.textContent = 'File exceeds 5MB';
+    fileInput.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width < 100 || img.height < 100) {
+        statusBox.textContent = 'Image too small';
+        fileInput.value = '';
+        return;
+      }
+      if (img.width > 2000 || img.height > 2000) {
+        statusBox.textContent = 'Image too large';
+        fileInput.value = '';
+        return;
+      }
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      fallbackAvatar.style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+clearBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  statusBox.textContent = '';
+});
+
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) {
+    statusBox.textContent = 'No file selected';
+    return;
+  }
+  uploadBtn.disabled = true;
+  uploadBtn.textContent = 'Uploading…';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const csrf = tokenMeta ? tokenMeta.content : '';
+    const resp = await fetch('/api/users/upload-profile-picture', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf },
+      body: fd
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data.success) {
+      statusBox.textContent = (data.error || 'Upload failed');
+    } else {
+      statusBox.textContent = 'Upload successful';
+      const picUrl = '{{ url_for('user.get_profile_picture', user_id=user.id) }}' + '?' + Date.now();
+      previewImg.src = picUrl;
+      previewImg.style.display = 'block';
+      fallbackAvatar.style.display = 'none';
+    }
+  } catch (e) {
+    statusBox.textContent = 'Network error';
+  } finally {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = 'Upload';
+  }
+});
+</script>
+{% endblock %}

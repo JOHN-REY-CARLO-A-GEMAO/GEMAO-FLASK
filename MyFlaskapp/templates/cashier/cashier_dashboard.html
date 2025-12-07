@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Cashier Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4 bg-dark text-white border-secondary">
+            <div class="card-header bg-dark text-white py-3 border-bottom border-secondary">
+                <h3 class="mb-0">Welcome, {{ session.get('user_name', 'Cashier') }}</h3>
+                <small>Manage your transactions here</small>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5>Cashier Profile</h5>
+                    <ul class="mb-0">
+                        <li><strong>Full Name:</strong> {{ session.user_info.firstname }} {{ session.user_info.lastname }}</li>
+                        <li><strong>Birthdate:</strong> {{ session.user_info.birthdate }}</li>
+                        <li><strong>Address:</strong> {{ session.user_info.address }}</li>
+                        <li><strong>Mobile Number:</strong> {{ session.user_info.mobile_number }}</li>
+                        <li><strong>Email:</strong> {{ session.user_info.email }}</li>
+                    </ul>
+                </div>
+                
+                <!-- Add cashier-specific content here -->
+                <div class="mt-4">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <a href="#" class="btn btn-primary me-md-2">
+                            New Transaction
+                        </a>
+                        <a href="#" class="btn btn-outline-primary me-md-2">
+                            View Sales
+                        </a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-danger ms-auto">
+                            Logout
+                        </a>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 d-md-none mb-3">
+        <button class="btn btn-warning" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminNav" aria-controls="adminNav" aria-label="Open admin menu">Menu</button>
+    </div>
+    <div class="col-md-3 mb-3 d-none d-md-block" aria-label="Admin navigation">
+        <div class="list-group">
+            <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">Users</a>
+            <a href="{{ url_for('admin.games_index') }}" class="list-group-item list-group-item-action {% if request.endpoint and request.endpoint.startswith('admin.games') %}active{% endif %}">Games</a>
+            <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.settings' %}active{% endif %}">Settings</a>
+            <a href="{{ url_for('admin.api_keys') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.api_keys' %}active{% endif %}">API Keys</a>
+        </div>
+    </div>
+    <div class="col-md-9">
+        {% block admin_content %}{% endblock %}
+    </div>
+</div>
+
+<div class="offcanvas offcanvas-start bg-dark text-light" tabindex="-1" id="adminNav" aria-labelledby="adminNavLabel">
+  <div class="offcanvas-header border-bottom border-secondary">
+    <h5 class="offcanvas-title text-warning" id="adminNavLabel">Admin Menu</h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div class="list-group">
+        <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">Users</a>
+        <a href="{{ url_for('admin.games_index') }}" class="list-group-item list-group-item-action {% if request.endpoint and request.endpoint.startswith('admin.games') %}active{% endif %}">Games</a>
+        <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.settings' %}active{% endif %}">Settings</a>
+        <a href="{{ url_for('admin.api_keys') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.api_keys' %}active{% endif %}">API Keys</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

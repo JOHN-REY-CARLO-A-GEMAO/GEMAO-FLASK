@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card bg-dark text-white border-secondary mb-4">
+            <div class="card-header bg-dark border-bottom border-secondary">
+                <h3>Versions for "{{ post.title }}"</h3>
+                <a href="{{ url_for('blog.edit', id=post.id) }}" class="btn btn-sm btn-outline-warning float-end">Back to Edit</a>
+            </div>
+            <div class="card-body">
+                {% if versions %}
+                <ul class="list-group">
+                    {% for version in versions %}
+                    <li class="list-group-item bg-dark text-white border-secondary d-flex justify-content-between align-items-center">
+                        Version {{ version.version_number }} (Created: {{ version.created_at }})
+                        <div>
+                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#versionModal{{ version.id }}">View</button>
+                            <form method="post" action="{{ url_for('blog.view_versions', id=post.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="version_id" value="{{ version.id }}">
+                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Are you sure you want to restore this version?')">Restore</button>
+                            </form>
+                        </div>
+                    </li>
+
+                    <!-- Modal for viewing content -->
+                    <div class="modal fade" id="versionModal{{ version.id }}" tabindex="-1" aria-labelledby="versionModalLabel{{ version.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content bg-dark text-white">
+                                <div class="modal-header border-secondary">
+                                    <h5 class="modal-title" id="versionModalLabel{{ version.id }}">Content of Version {{ version.version_number }}</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <pre class="text-white bg-secondary p-3 rounded">{{ version.content }}</pre>
+                                </div>
+                                <div class="modal-footer border-secondary">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>No versions available for this post.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

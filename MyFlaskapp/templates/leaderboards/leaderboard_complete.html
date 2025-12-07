@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.leaderboard-container {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.rank-medal {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+}
+
+.rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); }
+.rank-2 { background: linear-gradient(135deg, #C0C0C0, #808080); }
+.rank-3 { background: linear-gradient(135deg, #CD7F32, #8B4513); }
+.rank-other { background: linear-gradient(135deg, #6c757d, #495057); }
+
+.score-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.score-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.filter-section {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.loading-spinner {
+    display: none;
+    text-align: center;
+    padding: 2rem;
+}
+
+.comparison-mode {
+    background: rgba(255,215,0,0.1);
+    border: 2px solid #FFD700;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.difficulty-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+}
+
+.difficulty-easy { background: #28a745; }
+.difficulty-medium { background: #ffc107; color: #000; }
+.difficulty-hard { background: #fd7e14; }
+.difficulty-expert { background: #dc3545; }
+
+.user-comparison {
+    background: rgba(0,255,0,0.1);
+    border: 1px solid #28a745;
+    border-radius: 5px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    color: #28a745;
+}
+
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.page-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.page-btn:hover:not(.disabled) {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+}
+
+.page-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-btn.active {
+    background: #FFD700;
+    color: #000;
+    border-color: #FFD700;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="text-white mb-2">
+                <i class="bi bi-trophy-fill text-warning me-2"></i>
+                Leaderboards
+            </h1>
+            <p class="text-white-50">Compete with players worldwide and climb the rankings</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="d-flex gap-2 justify-content-end">
+                <button class="btn btn-outline-light" onclick="toggleComparison()">
+                    <i class="bi bi-people-fill"></i> Compare
+                </button>
+                <a href="{{ url_for('user.dashboard') }}" class="btn btn-warning">
+                    <i class="bi bi-house-fill"></i> Back to Games
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Mode -->
+    <div id="comparisonMode" class="comparison-mode" style="display: none;">
+        <h5 class="text-warning mb-3">
+            <i class="bi bi-people"></i> User Comparison
+        </h5>
+        <div class="row align-items-end">
+            <div class="col-md-8">
+                <label class="form-label text-white">User IDs (comma-separated)</label>
+                <input type="text" id="compareUserIds" class="form-control bg-dark text-white border-secondary" 
+                       placeholder="e.g., 1,2,3" value="">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-warning w-100" onclick="compareUsers()">
+                    <i class="bi bi-bar-chart-fill"></i> Compare Users
+                </button>
+            </div>
+        </div>
+        <div id="comparisonResults" class="mt-3"></div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filter-section">
+        <form id="leaderboardForm" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label text-white">Game</label>
+                <select name="game_id" id="gameSelect" class="form-select bg-dark text-white border-secondary" required>
+                    <option value="">Select a game</option>
+                    {% for game in games %}
+                    <option value="{{ game.id }}" {% if selected_game and selected_game.id == game.id %}selected{% endif %}>
+                        {{ game.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label text-white">Time Period</label>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="time_period" id="period-all" value="all_time" 
+                           {% if time_period == 'all_time' or not time_period %}checked{% endif %}>
+                    <label class="btn btn-outline-warning" for="period-all">All-Time</label>
+                    
+                    <input type="radio" class="btn-check" name="time_period" id="period-weekly" value="weekly" 
+                           {% if time_period == 'weekly' %}checked{% endif %}>
+                    <label class="btn btn-outline-warning" for="period-weekly">Weekly</label>
+                    
+                    <input type="radio" class="btn-check" name="time_period" id="period-daily" value="daily" 
+                           {% if time_period == 'daily' %}checked{% endif %}>
+                    <label class="btn btn-outline-warning" for="period-daily">Daily</label>
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label text-white">Difficulty</label>
+                <select name="difficulty" id="difficultySelect" class="form-select bg-dark text-white border-secondary">
+                    <option value="">All Levels</option>
+                    <option value="easy" {% if difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                    <option value="medium" {% if difficulty == 'medium' %}selected{% endif %}>Medium</option>
+                    <option value="hard" {% if difficulty == 'hard' %}selected{% endif %}>Hard</option>
+                    <option value="expert" {% if difficulty == 'expert' %}selected{% endif %}>Expert</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label text-white">Results</label>
+                <select name="limit" id="limitSelect" class="form-select bg-dark text-white border-secondary">
+                    <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-warning w-100">
+                    <i class="bi bi-search"></i> Show Results
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Game Statistics -->
+    {% if selected_game %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h6 class="text-white-50">Total Players</h6>
+                <h3 class="text-warning">{{ game_stats.total_plays or 0 }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h6 class="text-white-50">High Score</h6>
+                <h3 class="text-warning">{{ "%.0f"|format(game_stats.high_score or 0) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h6 class="text-white-50">Average Score</h6>
+                <h3 class="text-warning">{{ "%.0f"|format(game_stats.average_score or 0) }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h6 class="text-white-50">Plays Today</h6>
+                <h3 class="text-warning">{{ game_stats.plays_today or 0 }}</h3>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-white mt-2">Loading leaderboard...</p>
+    </div>
+
+    <!-- Leaderboard Results -->
+    <div id="leaderboardResults">
+        {% if selected_game and scores %}
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 class="text-white">
+                        <i class="bi bi-trophy text-warning me-2"></i>
+                        {{ selected_game.name }}
+                        <span class="badge bg-info ms-2">{{ time_period|replace('_', ' ')|title }}</span>
+                        {% if difficulty %}
+                        <span class="difficulty-badge difficulty-{{ difficulty }}">{{ difficulty|title }}</span>
+                        {% endif %}
+                    </h4>
+                    <div class="text-white-50">
+                        <i class="bi bi-people-fill"></i> {{ total_results }} players
+                    </div>
+                </div>
+
+                <div class="row">
+                    {% for score in scores %}
+                    <div class="col-12 mb-3">
+                        <div class="score-card p-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-1 text-center">
+                                    {% if score.rank == 1 %}
+                                    <div class="rank-medal rank-1">1</div>
+                                    {% elif score.rank == 2 %}
+                                    <div class="rank-medal rank-2">2</div>
+                                    {% elif score.rank == 3 %}
+                                    <div class="rank-medal rank-3">3</div>
+                                    {% else %}
+                                    <div class="rank-medal rank-other">{{ score.rank }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-1 text-center">
+                                    <div class="user-avatar">
+                                        {{ score.username[0]|upper }}
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <h5 class="text-white mb-1">{{ score.username }}</h5>
+                                    <p class="text-white-50 mb-0">
+                                        {{ score.firstname }} {{ score.lastname }}
+                                        {% if current_user and current_user.id == score.user_id %}
+                                        <span class="user-comparison ms-2">YOU</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                
+                                <div class="col-md-2 text-center">
+                                    <h3 class="text-warning mb-0">{{ "%.0f"|format(score.score_value) }}</h3>
+                                    <small class="text-white-50">points</small>
+                                </div>
+                                
+                                <div class="col-md-2 text-center">
+                                    <span class="difficulty-badge difficulty-{{ score.difficulty_level }}">
+                                        {{ score.difficulty_level|title }}
+                                    </span>
+                                    {% if score.playtime_seconds %}
+                                    <br><small class="text-white-50">{{ score.playtime_seconds // 60 }}m {{ score.playtime_seconds % 60 }}s</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-2 text-end">
+                                    <small class="text-white-50">
+                                        <i class="bi bi-clock"></i>
+                                        {{ score.achieved_at[:10] if score.achieved_at else 'N/A' }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if total_pages > 1 %}
+                <div class="pagination-container">
+                    <a href="#" class="page-btn {% if current_page <= 1 %}disabled{% endif %}" 
+                       onclick="loadPage({{ current_page - 1 }}); return false;">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </a>
+                    
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page or page_num == 1 or page_num == total_pages or (page_num >= current_page - 2 and page_num <= current_page + 2) %}
+                            <a href="#" class="page-btn {% if page_num == current_page %}active{% endif %}" 
+                               onclick="loadPage({{ page_num }}); return false;">
+                                {{ page_num }}
+                            </a>
+                        {% elif page_num == current_page - 3 or page_num == current_page + 3 %}
+                            <span class="text-white-50">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <a href="#" class="page-btn {% if current_page >= total_pages %}disabled{% endif %}" 
+                       onclick="loadPage({{ current_page + 1 }}); return false;">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% elif selected_game %}
+        <div class="text-center py-5">
+            <i class="bi bi-trophy text-white-50" style="font-size: 4rem;"></i>
+            <h4 class="text-white mt-3">No scores yet</h4>
+            <p class="text-white-50">Be the first to set a high score in {{ selected_game.name }}!</p>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-controller text-white-50" style="font-size: 4rem;"></i>
+            <h4 class="text-white mt-3">Select a game</h4>
+            <p class="text-white-50">Choose a game to view its leaderboard</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Toggle comparison mode
+function toggleComparison() {
+    const comparisonMode = document.getElementById('comparisonMode');
+    comparisonMode.style.display = comparisonMode.style.display === 'none' ? 'block' : 'none';
+}
+
+// Compare users
+function compareUsers() {
+    const userIds = document.getElementById('compareUserIds').value;
+    const gameId = document.getElementById('gameSelect').value;
+    const timePeriod = document.querySelector('input[name="time_period"]:checked').value;
+    
+    if (!userIds || !gameId) {
+        alert('Please select a game and enter user IDs');
+        return;
+    }
+    
+    const userIdArray = userIds.split(',').map(id => id.trim()).filter(id => id);
+    
+    if (userIdArray.length === 0 || userIdArray.length > 10) {
+        alert('Please enter 1-10 valid user IDs');
+        return;
+    }
+    
+    fetch('/api/leaderboard/compare', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            user_ids: userIdArray.map(id => parseInt(id)),
+            game_id: parseInt(gameId),
+            time_period: timePeriod
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        displayComparisonResults(data);
+    })
+    .catch(error => {
+        console.error('Error comparing users:', error);
+        alert('Error comparing users: ' + error.message);
+    });
+}
+
+// Display comparison results
+function displayComparisonResults(data) {
+    const resultsDiv = document.getElementById('comparisonResults');
+    
+    if (data.comparison.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-white-50">No comparison data available</p>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    data.comparison.forEach((user, index) => {
+        const rankClass = user.rank_position === 1 ? 'rank-1' : 
+                         user.rank_position === 2 ? 'rank-2' : 
+                         user.rank_position === 3 ? 'rank-3' : 'rank-other';
+        
+        html += `
+            <div class="col-md-4 mb-2">
+                <div class="score-card p-2">
+                    <div class="d-flex align-items-center">
+                        <div class="rank-medal ${rankClass} me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                            ${user.rank_position}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="text-white">User ${user.user_id}</div>
+                            <div class="text-warning">${user.score_value} pts</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    resultsDiv.innerHTML = html;
+}
+
+// Form submission handler
+document.getElementById('leaderboardForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const params = new URLSearchParams(formData);
+    
+    // Redirect with new parameters
+    window.location.search = params.toString();
+});
+
+// Auto-refresh leaderboard every 30 seconds
+setInterval(() => {
+    const gameSelect = document.getElementById('gameSelect');
+    if (gameSelect.value) {
+        // Only auto-refresh if a game is selected
+        const form = document.getElementById('leaderboardForm');
+        form.dispatchEvent(new Event('submit'));
+    }
+}, 30000);
+</script>
+{% endblock %}

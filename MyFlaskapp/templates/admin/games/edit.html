@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+
+{% block admin_content %}
+<h3 class="text-warning mb-3">Edit Game</h3>
+<form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" class="form-control" value="{{ request.form.name or game.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="4">{{ request.form.description or game.description }}</textarea>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">File Path</label>
+        <input type="text" name="file_path" class="form-control" value="{{ request.form.file_path or game.file_path }}">
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Image Path</label>
+        <input type="text" name="image_path" class="form-control" value="{{ request.form.image_path or game.image_path }}">
+    </div>
+    <button type="submit" class="btn btn-warning">Save</button>
+    <a href="{{ url_for('admin.games_index') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

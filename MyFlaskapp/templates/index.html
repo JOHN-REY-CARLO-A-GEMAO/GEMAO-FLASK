@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mt-5">
+    <div class="mb-4">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Naruto_logo.svg" alt="Naruto Logo" class="img-fluid w-25 mx-auto d-block">
+    </div>
+    <h1 class="display-4">Welcome, Future Hokage!</h1>
+    <p class="lead">My name is <strong>[Your Name]</strong>, and I aspire to be a <strong>Full Stack Ninja
+            Developer</strong>.</p>
+    <hr class="my-4 border-secondary">
+    <p>Explore my ninja tools, play 10 custom Python games, and join the village.</p>
+    <a class="btn btn-warning btn-lg" href="{{ url_for('auth.register') }}" role="button">Become a Genin (Sign Up)</a>
+    <a class="btn btn-outline-light btn-lg" href="{{ url_for('auth.login') }}" role="button">Login</a>
+</div>
+{% endblock %}
