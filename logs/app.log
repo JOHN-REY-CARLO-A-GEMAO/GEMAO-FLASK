@@ -148,3 +148,32 @@ Traceback (most recent call last):
   File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\templating.py", line 99, in _get_source_fast
     raise TemplateNotFound(template)
 jinja2.exceptions.TemplateNotFound: leaderboards/index.html
+2025-12-07 19:55:30,302 ERROR MyFlaskapp Unhandled exception
+Traceback (most recent call last):
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 867, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 852, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\Administrator\Downloads\GEMAO-FLASK (1)-20251205T044439Z-3-001\GEMAO-FLASK\MyFlaskapp\blueprints\auth.py", line 79, in login
+    session_token = create_session(user_obj.id, request.remote_addr, request.user_agent.string)
+  File "C:\Users\Administrator\Downloads\GEMAO-FLASK (1)-20251205T044439Z-3-001\GEMAO-FLASK\MyFlaskapp\sessions.py", line 16, in create_session
+    cursor.execute(
+    ~~~~~~~~~~~~~~^
+        """
+        ^^^
+    ...<3 lines>...
+        (user_id, session_token, ip_address, user_agent, expires_at)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\mysql\connector\cursor.py", line 617, in execute
+    self._handle_result(self._connection.cmd_query(stmt))
+                        ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\mysql\connector\opentelemetry\context_propagation.py", line 77, in wrapper
+    return method(cnx, *args, **kwargs)
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\mysql\connector\connection.py", line 843, in cmd_query
+    result = self._handle_result(self._send_cmd(ServerCmd.QUERY, query))
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\mysql\connector\connection.py", line 620, in _handle_result
+    raise get_exception(packet)
+mysql.connector.errors.ProgrammingError: 1046 (3D000): No database selected
