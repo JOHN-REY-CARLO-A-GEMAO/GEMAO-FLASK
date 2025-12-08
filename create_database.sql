@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL, -- Scrypt/Bcrypt hash
     role ENUM('admin', 'user') DEFAULT 'user',
+    profile_picture_path VARCHAR(255) DEFAULT NULL,
+    profile_picture_updated_at TIMESTAMP NULL DEFAULT NULL,
     is_active BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -40,8 +42,10 @@ CREATE TABLE IF NOT EXISTS otp_verification (
 CREATE TABLE IF NOT EXISTS games (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    description TEXT,
     file_path VARCHAR(255),
-    image_path VARCHAR(255)
+    image_path VARCHAR(255),
+    is_enabled BOOLEAN DEFAULT TRUE
 );
 
 -- 5. Game Access (Many-to-Many: Users <-> Games)

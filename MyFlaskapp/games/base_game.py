@@ -64,6 +64,10 @@ class NarutoGame(ABC):
         base = os.path.dirname(__file__)
         return os.path.abspath(os.path.join(base, "..", "static", "sounds"))
 
+    def _images_path(self):
+        base = os.path.dirname(__file__)
+        return os.path.abspath(os.path.join(base, "..", "static", "games", "assets", "images"))
+
     def _load_audio_settings(self):
         base = os.path.dirname(__file__)
         path = os.path.join(base, "audio_settings.json")

@@ -30,7 +30,7 @@ class NarutoRunner(NarutoGame):
         self.obstacle_speed = 10
 
         # Load assets
-        self.assets_dir = os.path.join(os.path.dirname(__file__), "assets")
+        self.assets_dir = self._images_path()
         self.player_img = pygame.transform.scale(
             pygame.image.load(os.path.join(self.assets_dir, "naruto_run.png")).convert_alpha(), (40, 60)
         )

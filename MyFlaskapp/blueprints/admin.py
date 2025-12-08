@@ -49,14 +49,16 @@ def games_create():
         name = request.form.get('name', '').strip()
         file_path = request.form.get('file_path', '').strip()
         image_path = request.form.get('image_path', '').strip()
+        description = request.form.get('description', '').strip()
+        is_enabled = 'is_enabled' in request.form
         if not name:
             flash('Name is required', 'danger')
             return render_template('admin/games/create.html')
         conn = db.get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO games (name, file_path, image_path) VALUES (%s, %s, %s)",
-            (name, file_path, image_path)
+            "INSERT INTO games (name, file_path, image_path, description, is_enabled) VALUES (%s, %s, %s, %s, %s)",
+            (name, file_path, image_path, description, is_enabled)
         )
         conn.commit()
         cursor.close()
@@ -80,6 +82,8 @@ def games_edit(game_id):
         name = request.form.get('name', '').strip()
         file_path = request.form.get('file_path', '').strip()
         image_path = request.form.get('image_path', '').strip()
+        description = request.form.get('description', '').strip()
+        is_enabled = 'is_enabled' in request.form
         if not name:
             flash('Name is required', 'danger')
             cursor.close()
@@ -87,8 +91,8 @@ def games_edit(game_id):
             return render_template('admin/games/edit.html', game=game)
         upd = conn.cursor()
         upd.execute(
-            "UPDATE games SET name = %s, file_path = %s, image_path = %s WHERE id = %s",
-            (name, file_path, image_path, game_id)
+            "UPDATE games SET name = %s, file_path = %s, image_path = %s, description = %s, is_enabled = %s WHERE id = %s",
+            (name, file_path, image_path, description, is_enabled, game_id)
         )
         conn.commit()
         upd.close()

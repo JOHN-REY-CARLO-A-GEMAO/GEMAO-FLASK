@@ -36,10 +36,11 @@ def dashboard():
     # Get games with access
     cur.execute(
         """
-        SELECT g.id, g.name, g.description, g.file_path,
+        SELECT g.id, g.name, g.description, g.file_path, g.is_enabled,
                COALESCE(ga.is_allowed, FALSE) AS is_allowed
         FROM games g
         LEFT JOIN game_access ga ON ga.game_id = g.id AND ga.user_id = %s
+        WHERE g.is_enabled = TRUE
         ORDER BY g.name
         """,
         (uid,)
@@ -133,7 +134,7 @@ def profile():
             age = today.year - bdate.year - ((today.month, today.day) < (bdate.month, bdate.day))
         
         cursor.execute("""
-            UPDATE users SET middlename=%s, birthday=%s, age=%s, contact_number=%s 
+            UPDATE users SET middlename=%s, birthday=%s, age=%s, contact_number=%s
             WHERE id=%s
         """, (middlename, birthdate, age, contact, uid))
         conn.commit()
