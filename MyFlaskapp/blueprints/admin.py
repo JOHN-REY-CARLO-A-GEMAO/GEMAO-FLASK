@@ -4,8 +4,6 @@ import MyFlaskapp.db as db
 from MyFlaskapp.sync import sync_games
 import os
 import json
-import MyFlaskapp.api_key_manager as api_key_manager
-from datetime import datetime
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -32,7 +30,7 @@ def dashboard():
 def games_index():
     conn = db.get_db()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, name, description, file_path, image_path FROM games")
+    cursor.execute("SELECT id, name, file_path, image_path FROM games")
     games = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -49,7 +47,6 @@ def games_sync():
 def games_create():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        description = request.form.get('description', '').strip()
         file_path = request.form.get('file_path', '').strip()
         image_path = request.form.get('image_path', '').strip()
         if not name:
@@ -58,8 +55,8 @@ def games_create():
         conn = db.get_db()
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO games (name, description, file_path, image_path) VALUES (%s, %s, %s, %s)",
-            (name, description, file_path, image_path)
+            "INSERT INTO games (name, file_path, image_path) VALUES (%s, %s, %s)",
+            (name, file_path, image_path)
         )
         conn.commit()
         cursor.close()
@@ -81,7 +78,6 @@ def games_edit(game_id):
         return redirect(url_for('admin.games_index'))
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        description = request.form.get('description', '').strip()
         file_path = request.form.get('file_path', '').strip()
         image_path = request.form.get('image_path', '').strip()
         if not name:
@@ -91,8 +87,8 @@ def games_edit(game_id):
             return render_template('admin/games/edit.html', game=game)
         upd = conn.cursor()
         upd.execute(
-            "UPDATE games SET name = %s, description = %s, file_path = %s, image_path = %s WHERE id = %s",
-            (name, description, file_path, image_path, game_id)
+            "UPDATE games SET name = %s, file_path = %s, image_path = %s WHERE id = %s",
+            (name, file_path, image_path, game_id)
         )
         conn.commit()
         upd.close()
@@ -166,6 +162,78 @@ def settings_audio_update():
     except Exception:
         return jsonify({'ok': False}), 500
     return jsonify({'ok': True})
+
+@admin_bp.route('/leaderboard')
+def leaderboard_management():
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # Get statistics
+    cursor.execute('SELECT COUNT(*) as total_users FROM users')
+    stats = cursor.fetchone()
+    
+    cursor.execute('SELECT COUNT(*) as total_games FROM games')
+    games_count = cursor.fetchone()
+    stats['total_games'] = games_count['total_games']
+    
+    cursor.execute('SELECT COUNT(*) as total_scores FROM leaderboard_scores')
+    scores_count = cursor.fetchone()
+    stats['total_scores'] = scores_count['total_scores']
+    
+    cursor.execute('SELECT COUNT(*) as valid_scores FROM leaderboard_scores WHERE is_valid = TRUE')
+    valid_count = cursor.fetchone()
+    stats['valid_scores'] = valid_count['valid_scores']
+    
+    # Get recent scores with user and game info
+    cursor.execute("""
+        SELECT ls.*, u.firstname, u.lastname, g.name as game_name
+        FROM leaderboard_scores ls
+        JOIN users u ON ls.user_id = u.id
+        JOIN games g ON ls.game_id = g.id
+        ORDER BY ls.achieved_at DESC
+        LIMIT 50
+    """)
+    scores = cursor.fetchall()
+    
+    # Get games for filters
+    cursor.execute('SELECT * FROM games ORDER BY name')
+    games = cursor.fetchall()
+    
+    # Get validation rules
+    cursor.execute("""
+        SELECT svr.*, g.name as game_name
+        FROM score_validation_rules svr
+        LEFT JOIN games g ON svr.game_id = g.id
+        ORDER BY svr.is_active DESC, svr.game_id
+    """)
+    validation_rules = cursor.fetchall()
+    
+    # Get current rankings
+    cursor.execute("""
+        SELECT 
+            g.name as game_name,
+            MAX(CASE WHEN lr.rank_position = 1 THEN CONCAT(u.firstname, ' ', u.lastname) END) as first_player,
+            MAX(CASE WHEN lr.rank_position = 1 THEN lr.score_value END) as first_score,
+            MAX(CASE WHEN lr.rank_position = 2 THEN CONCAT(u.firstname, ' ', u.lastname) END) as second_player,
+            MAX(CASE WHEN lr.rank_position = 2 THEN lr.score_value END) as second_score,
+            MAX(CASE WHEN lr.rank_position = 3 THEN CONCAT(u.firstname, ' ', u.lastname) END) as third_player,
+            MAX(CASE WHEN lr.rank_position = 3 THEN lr.score_value END) as third_score
+        FROM leaderboard_rankings lr
+        JOIN games g ON lr.game_id = g.id
+        JOIN users u ON lr.user_id = u.id
+        WHERE lr.time_period = 'all_time' AND lr.rank_position <= 3
+        GROUP BY g.id, g.name
+        ORDER BY g.name
+    """)
+    rankings = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('admin/leaderboard_management.html', 
+                         stats=stats, scores=scores, games=games, 
+                         validation_rules=validation_rules, rankings=rankings)
+
 
 @admin_bp.route('/delete_user/<int:user_id>', methods=['POST'])
 def delete_user(user_id):
@@ -265,57 +333,124 @@ def update_user_game_access(user_id):
 
     return jsonify({"status": "ok", "updated": changed})
 
-@admin_bp.route('/api_keys', methods=['GET'])
-def api_keys():
-    user_id = getattr(current_user, 'id', None)
-    if not user_id:
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('auth.login'))
+@admin_bp.route('/categories')
+def categories():
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM game_categories ORDER BY name")
+    categories = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return render_template('admin/categories.html', categories=categories)
+
+@admin_bp.route('/categories/create', methods=['GET', 'POST'])
+def create_category():
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        if not name:
+            flash('Category name is required', 'danger')
+            return render_template('admin/create_category.html')
+        
+        conn = db.get_db()
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO game_categories (name, description) VALUES (%s, %s)", (name, description))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Category created successfully', 'success')
+        return redirect(url_for('admin.categories'))
     
-    api_keys_list = api_key_manager.get_user_api_keys(user_id)
-    return render_template('admin/api_keys.html', api_keys=api_keys_list)
+    return render_template('admin/create_category.html')
 
-@admin_bp.route('/api_keys/create', methods=['POST'])
-def create_api_key():
-    user_id = getattr(current_user, 'id', None)
-    if not user_id:
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('auth.login'))
-
-    target_user_id = request.form.get('user_id', type=int)
-    permissions = request.form.get('permissions')
-    expires_at_str = request.form.get('expires_at')
-    expires_at = None
-    if expires_at_str:
-        try:
-            expires_at = datetime.fromisoformat(expires_at_str)
-        except ValueError:
-            flash('Invalid date format for expiration.', 'danger')
-            return redirect(url_for('admin.api_keys'))
-
-    try:
-        raw_key, _ = api_key_manager.create_api_key(target_user_id or user_id, permissions, expires_at)
-        flash(f'API Key created: {raw_key}', 'success')
-    except Exception as e:
-        flash(f'Error creating API Key: {e}', 'danger')
+@admin_bp.route('/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+def edit_category(category_id):
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM game_categories WHERE id = %s", (category_id,))
+    category = cursor.fetchone()
     
-    return redirect(url_for('admin.api_keys'))
-
-@admin_bp.route('/api_keys/<int:key_id>/delete', methods=['POST'])
-def delete_api_key(key_id):
-    user_id = getattr(current_user, 'id', None)
-    if not user_id:
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('auth.login'))
+    if not category:
+        cursor.close()
+        conn.close()
+        flash('Category not found', 'danger')
+        return redirect(url_for('admin.categories'))
     
-    key_data = api_key_manager.get_api_key(key_id) # This needs to be by key_id, not key_hash
-    if key_data and key_data['user_id'] != user_id: # Only allow admin to delete his own keys or general keys
-        flash('Unauthorized to delete this API key.', 'danger')
-        return redirect(url_for('admin.api_keys'))
-
-    if api_key_manager.delete_api_key(key_id):
-        flash('API Key deleted.', 'success')
-    else:
-        flash('Error deleting API Key.', 'danger')
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        if not name:
+            flash('Category name is required', 'danger')
+            cursor.close()
+            conn.close()
+            return render_template('admin/edit_category.html', category=category)
+        
+        cursor.execute("UPDATE game_categories SET name = %s, description = %s WHERE id = %s", (name, description, category_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        flash('Category updated successfully', 'success')
+        return redirect(url_for('admin.categories'))
     
-    return redirect(url_for('admin.api_keys'))
+    cursor.close()
+    conn.close()
+    return render_template('admin/edit_category.html', category=category)
+
+@admin_bp.route('/categories/<int:category_id>/delete', methods=['POST'])
+def delete_category(category_id):
+    conn = db.get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM game_category_association WHERE category_id = %s", (category_id,))
+    cursor.execute("DELETE FROM game_categories WHERE id = %s", (category_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    flash('Category deleted successfully', 'success')
+    return redirect(url_for('admin.categories'))
+
+@admin_bp.route('/categories/<int:category_id>/games')
+def category_games(category_id):
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("SELECT * FROM game_categories WHERE id = %s", (category_id,))
+    category = cursor.fetchone()
+    
+    if not category:
+        cursor.close()
+        conn.close()
+        flash('Category not found', 'danger')
+        return redirect(url_for('admin.categories'))
+    
+    cursor.execute("""
+        SELECT g.*, gca.is_associated
+        FROM games g
+        LEFT JOIN game_category_association gca ON g.id = gca.game_id AND gca.category_id = %s
+        ORDER BY g.name
+    """, (category_id,))
+    games = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    return render_template('admin/category_games.html', category=category, games=games)
+
+@admin_bp.route('/categories/<int:category_id>/games', methods=['POST'])
+def update_category_games(category_id):
+    game_updates = request.get_json().get('games', [])
+    
+    conn = db.get_db()
+    cursor = conn.cursor()
+    
+    # Clear existing associations
+    cursor.execute("DELETE FROM game_category_association WHERE category_id = %s", (category_id,))
+    
+    # Add new associations
+    for game_id in game_updates:
+        cursor.execute("INSERT INTO game_category_association (category_id, game_id) VALUES (%s, %s)", (category_id, game_id))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    return jsonify({"status": "ok", "updated": len(game_updates)})

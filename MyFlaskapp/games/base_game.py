@@ -81,14 +81,18 @@ class NarutoGame(ABC):
         except Exception:
             return
         self._audio = {}
+        self._background_music = None
         sp = self._sounds_path()
         suc = os.path.join(sp, "success.mp3")
         fail = os.path.join(sp, "fail.mp3")
+        theme = os.path.join(sp, "Naruto Theme - The Raising Fighting Spirit.mp3")
         try:
             if os.path.exists(suc):
                 self._audio["victory"] = pygame.mixer.Sound(suc)
             if os.path.exists(fail):
                 self._audio["defeat"] = pygame.mixer.Sound(fail)
+            if os.path.exists(theme):
+                self._background_music = theme
         except Exception:
             pass
         mv = float(self._audio_settings.get("master", 0.6))
@@ -107,6 +111,49 @@ class NarutoGame(ABC):
                 s.play()
         except Exception:
             pass
+
+    def play_background_music(self, loops=-1):
+        """Play background music. loops=-1 for infinite loop, 0 for once, or specific number."""
+        if not self._background_music:
+            return
+        try:
+            mv = float(self._audio_settings.get("master", 0.6))
+            gv = float(self._audio_settings.get("games", {}).get(self.title, 0.8))
+            bv = float(self._audio_settings.get("background_music", 0.4))
+            vol = max(0.0, min(1.0, mv * gv * bv))
+            pygame.mixer.music.set_volume(vol)
+            pygame.mixer.music.load(self._background_music)
+            pygame.mixer.music.play(loops)
+        except Exception:
+            pass
+
+    def stop_background_music(self):
+        """Stop background music."""
+        try:
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
+
+    def pause_background_music(self):
+        """Pause background music."""
+        try:
+            pygame.mixer.music.pause()
+        except Exception:
+            pass
+
+    def unpause_background_music(self):
+        """Unpause background music."""
+        try:
+            pygame.mixer.music.unpause()
+        except Exception:
+            pass
+
+    def is_background_music_playing(self):
+        """Check if background music is playing."""
+        try:
+            return pygame.mixer.music.get_busy()
+        except Exception:
+            return False
 
     def load_high_score(self):
         path = self._scores_path()

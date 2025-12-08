@@ -8,6 +8,52 @@
     </div>
 </div>
 
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h5 class="card-title">Points Balance</h5>
+                <h2>{{ current_points }}</h2>
+                <a href="{{ url_for('user.points_history') }}" class="btn btn-light btn-sm">View History</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card bg-dark text-white border-secondary">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Personal Bests</h5>
+            </div>
+            <div class="card-body">
+                {% if personal_bests %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm">
+                        <thead>
+                            <tr>
+                                <th>Game</th>
+                                <th>Score</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for best in personal_bests[:5] %}
+                            <tr>
+                                <td>{{ best.game_name }}</td>
+                                <td class="text-warning">{{ best.score }}</td>
+                                <td>{{ best.achieved_at.strftime('%m/%d') if best.achieved_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No personal bests yet. Start playing games to set records!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-12">
         <h3 class="mb-3 border-bottom border-light pb-2">Training Grounds (Games)</h3>

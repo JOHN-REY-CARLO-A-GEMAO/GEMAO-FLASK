@@ -8,9 +8,10 @@
     <div class="col-md-3 mb-3 d-none d-md-block" aria-label="Admin navigation">
         <div class="list-group">
             <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">Users</a>
+            <a href="{{ url_for('admin.categories') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.categories' %}active{% endif %}">Categories</a>
+            <a href="{{ url_for('admin.leaderboard_management') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.leaderboard_management' %}active{% endif %}">Leaderboard</a>
             <a href="{{ url_for('admin.games_index') }}" class="list-group-item list-group-item-action {% if request.endpoint and request.endpoint.startswith('admin.games') %}active{% endif %}">Games</a>
             <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.settings' %}active{% endif %}">Settings</a>
-            <a href="{{ url_for('admin.api_keys') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.api_keys' %}active{% endif %}">API Keys</a>
         </div>
     </div>
     <div class="col-md-9">
@@ -26,9 +27,9 @@
   <div class="offcanvas-body">
     <div class="list-group">
         <a href="{{ url_for('admin.dashboard') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">Users</a>
+        <a href="{{ url_for('admin.leaderboard_management') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.leaderboard_management' %}active{% endif %}">Leaderboard</a>
         <a href="{{ url_for('admin.games_index') }}" class="list-group-item list-group-item-action {% if request.endpoint and request.endpoint.startswith('admin.games') %}active{% endif %}">Games</a>
         <a href="{{ url_for('admin.settings') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.settings' %}active{% endif %}">Settings</a>
-        <a href="{{ url_for('admin.api_keys') }}" class="list-group-item list-group-item-action {% if request.endpoint == 'admin.api_keys' %}active{% endif %}">API Keys</a>
     </div>
   </div>
 </div>

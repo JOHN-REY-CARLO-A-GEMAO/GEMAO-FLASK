@@ -202,6 +202,17 @@ class FlaskAppTests(unittest.TestCase):
 
     def test_upload_profile_picture_wrong_type(self):
         with self.app.test_request_context('/'):
-            s = URLSafeTimedSerializer(self.app.con
+            s = URLSafeTimedSerializer(self.app.config['SECRET_KEY'])
+            token = s.dumps('1')
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['user_id'] = 1
+                sess['loggedin'] = True
+            # upload a non-image / invalid file type
+            data = {
+                'file': (BytesIO(b'not-an-image-content'), 'bad.txt')
+            }
+            r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
+            self.assertEqual(r.status_code, 400)
 if __name__ == '__main__':
     unittest.main()

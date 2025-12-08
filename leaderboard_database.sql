@@ -9,9 +9,7 @@ CREATE TABLE IF NOT EXISTS leaderboard_scores (
     user_id INT NOT NULL,
     game_id INT NOT NULL,
     score_value DECIMAL(15,2) NOT NULL,
-    rank_position INT GENERATED ALWAYS AS (
-        DENSE_RANK() OVER (PARTITION BY game_id ORDER BY score_value DESC)
-    ) STORED,
+    rank_position INT,
     achieved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_valid BOOLEAN DEFAULT TRUE,
     validation_hash VARCHAR(64),
@@ -37,8 +35,8 @@ CREATE TABLE IF NOT EXISTS leaderboard_rankings (
     score_value DECIMAL(15,2),
     achieved_at TIMESTAMP,
     time_period ENUM('daily', 'weekly', 'all_time') DEFAULT 'all_time',
-    period_start TIMESTAMP,
-    period_end TIMESTAMP,
+    period_start TIMESTAMP NULL,
+    period_end TIMESTAMP NULL,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (game_id, user_id, time_period),
     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,

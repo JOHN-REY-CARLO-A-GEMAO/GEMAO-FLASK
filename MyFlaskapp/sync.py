@@ -28,17 +28,14 @@ def _rel_path(path: str) -> str:
 
 def parse_game_metadata(file_path: str) -> Dict[str, Any]:
     name = os.path.splitext(os.path.basename(file_path))[0]
-    description = ''
     version = None
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         try:
             mod = ast.parse(content)
-            doc = ast.get_docstring(mod) or ''
-            description = doc.strip()
         except Exception:
-            description = ''
+            pass
         m = re.search(r"super\s*\.__init__\(\s*['\"]([^'\"]+)['\"]\s*,\s*\d+\s*,\s*\d+\s*\)", content)
         if m:
             name = m.group(1).strip()
@@ -49,7 +46,6 @@ def parse_game_metadata(file_path: str) -> Dict[str, Any]:
         pass
     return {
         'name': name,
-        'description': description,
         'version': version,
         'file_path': _rel_path(file_path),
     }
@@ -60,7 +56,7 @@ def sync_games(actor_id: int | None = None) -> Dict[str, Any]:
     try:
         conn = get_db()
         cur = conn.cursor(dictionary=True)
-        cur.execute("SELECT id, name, description, file_path, image_path FROM games")
+        cur.execute("SELECT id, name, file_path, image_path FROM games")
         rows = cur.fetchall()
         cur.close()
         by_path = {r['file_path']: r for r in rows if r.get('file_path')}
@@ -74,23 +70,18 @@ def sync_games(actor_id: int | None = None) -> Dict[str, Any]:
             meta = parse_game_metadata(fp)
             rel = meta['file_path']
             nm = meta['name']
-            desc = meta['description']
             try:
                 if rel in by_path:
                     row = by_path[rel]
                     need_upd = False
                     new_name = row['name']
-                    new_desc = row['description']
                     if nm and nm != row['name']:
                         new_name = nm
                         need_upd = True
-                    if desc and desc != (row['description'] or ''):
-                        new_desc = desc
-                        need_upd = True
                     if need_upd:
                         wcur.execute(
-                            "UPDATE games SET name = %s, description = %s WHERE id = %s",
-                            (new_name, new_desc, row['id'])
+                            "UPDATE games SET name = %s WHERE id = %s",
+                            (new_name, row['id'])
                         )
                         result['updated'] += 1
                         result['details'].append({'file': rel, 'action': 'updated'})
@@ -107,8 +98,8 @@ def sync_games(actor_id: int | None = None) -> Dict[str, Any]:
                     result['details'].append({'file': rel, 'action': 'linked'})
                 else:
                     wcur.execute(
-                        "INSERT INTO games (name, description, file_path) VALUES (%s, %s, %s)",
-                        (nm, desc, rel)
+                        "INSERT INTO games (name, file_path) VALUES (%s, %s)",
+                        (nm, rel)
                     )
                     result['inserted'] += 1
                     result['details'].append({'file': rel, 'action': 'inserted'})

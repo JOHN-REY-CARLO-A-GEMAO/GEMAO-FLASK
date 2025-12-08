@@ -11,7 +11,7 @@ from typing import List, Dict, Optional, Tuple
 from decimal import Decimal
 
 from MyFlaskapp.db import get_db_connection
-from MyFlaskapp.rewards import add_points, update_streak
+from MyFlaskapp.rewards import add_points
 
 
 class LeaderboardScore:
@@ -82,9 +82,8 @@ class LeaderboardScore:
             # Update ranking cache
             cls._update_ranking_cache(game_id, user_id, score_value)
             
-            # Add points and update streak
+            # Add points
             add_points(user_id, 10, "New score submitted")
-            update_streak(user_id, game_id)
             
             conn.commit()
             return cls(result)

@@ -21,6 +21,84 @@ except Exception:
     Image = None
     ImageTk = None
 
+# Networking helpers used by API-style tests
+import urllib.request as request
+import urllib.error as urlerror
+import time
+
+
+def _difficulty_param(level: str) -> str:
+    """Normalize difficulty string for API usage/tests."""
+    mapping = {"Easy": "easy", "Medium": "medium", "Hard": "hard"}
+    return mapping.get(level, "medium")
+
+
+def parse_question_payload(payload) -> list:
+    """Parse a variety of possible question payload shapes into (question, answer) pairs.
+
+    Accepts dicts with a 'questions' list or direct lists of dicts. Handles common key
+    variants like 'question'/'q'/'text' and 'answer'/'a'/'ans'.
+    """
+    out = []
+    if isinstance(payload, dict):
+        items = payload.get('questions', [])
+    elif isinstance(payload, list):
+        items = payload
+    else:
+        return out
+
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        q = it.get('question') or it.get('q') or it.get('text')
+        a = it.get('answer') or it.get('a') or it.get('ans')
+        if q and a:
+            out.append((q, a))
+    return out
+
+
+def fetch_naruto_questions(url: str, difficulty: str, timeout: float = 2.0, max_retries: int = 1, cache: dict | None = None) -> list:
+    """Fetch JSON question payload from `url` and parse into list of (q,a).
+
+    Caches results in `cache` keyed by (url, difficulty_lower).
+    Handles HTTP 429 by waiting for Retry-After then retrying up to `max_retries`.
+    Returns empty list on errors or invalid JSON.
+    """
+    if cache is None:
+        cache = {}
+    key = (url, _difficulty_param(difficulty))
+    if key in cache:
+        return cache[key]
+
+    attempts = 0
+    while True:
+        try:
+            with request.urlopen(url, timeout=timeout) as resp:
+                raw = resp.read()
+                try:
+                    data = json.loads(raw)
+                except Exception:
+                    return []
+                items = parse_question_payload(data)
+                cache[key] = items
+                return items
+        except urlerror.HTTPError as e:
+            # Handle rate limiting (429)
+            if getattr(e, 'code', None) == 429 and attempts < max_retries:
+                retry_after = None
+                try:
+                    retry_after = (e.hdrs.get('Retry-After') if hasattr(e, 'hdrs') else None)
+                except Exception:
+                    retry_after = None
+                wait = int(retry_after) if (retry_after and str(retry_after).isdigit()) else 1
+                time.sleep(wait)
+                attempts += 1
+                continue
+            return []
+        except Exception:
+            return []
+
+
 # ---------------------------
 # Base Game Class
 # ---------------------------

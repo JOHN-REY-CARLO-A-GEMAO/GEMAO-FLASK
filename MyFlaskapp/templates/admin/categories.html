@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Game Categories{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Game Categories</h2>
+    <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Category
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if categories %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>{{ category.name }}</td>
+                        <td>{{ category.description or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('admin.category_games', category_id=category.id) }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-gamepad"></i> Games
+                            </a>
+                            <a href="{{ url_for('admin.edit_category', category_id=category.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form method="POST" action="{{ url_for('admin.delete_category', category_id=category.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted">No categories found.</p>
+            <a href="{{ url_for('admin.create_category') }}" class="btn btn-primary">Create First Category</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

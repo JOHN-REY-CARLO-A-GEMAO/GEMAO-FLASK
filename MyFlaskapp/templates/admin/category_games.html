@@ -1,0 +1,87 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ category.name }} - Games{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>{{ category.name }} - Games</h2>
+        <p class="text-muted">{{ category.description or 'No description' }}</p>
+    </div>
+    <a href="{{ url_for('admin.categories') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Categories
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>Games in this Category</h5>
+            <button type="button" class="btn btn-primary" onclick="saveGameAssociations()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" id="selectAll" onchange="toggleAllGames()">
+                        </th>
+                        <th>Game Name</th>
+                        <th>File Path</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in games %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="game_{{ game.id }}" value="{{ game.id }}" 
+                                   {% if game.is_associated %}checked{% endif %}>
+                        </td>
+                        <td>{{ game.name }}</td>
+                        <td>{{ game.file_path }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAllGames() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('input[name^="game_"]');
+    checkboxes.forEach(checkbox => checkbox.checked = selectAll.checked);
+}
+
+function saveGameAssociations() {
+    const checkboxes = document.querySelectorAll('input[name^="game_"]:checked');
+    const gameIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    
+    fetch('{{ url_for("admin.update_category_games", category_id=category.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ games: gameIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            alert('Game associations updated successfully!');
+            location.reload();
+        } else {
+            alert('Error updating game associations');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating game associations');
+    });
+}
+</script>
+{% endblock %}

@@ -32,6 +32,8 @@ def dashboard():
     uid = getattr(current_user, 'id', None) or session.get('user_id')
     conn = db.get_db()
     cur = conn.cursor(dictionary=True)
+    
+    # Get games with access
     cur.execute(
         """
         SELECT g.id, g.name, g.description, g.file_path,
@@ -42,10 +44,30 @@ def dashboard():
         """,
         (uid,)
     )
-    rows = cur.fetchall()
+    games = cur.fetchall()
+    
+    # Get personal bests
+    cur.execute(
+        """
+        SELECT upb.*, g.name as game_name
+        FROM user_personal_bests upb
+        JOIN games g ON upb.game_id = g.id
+        WHERE upb.user_id = %s
+        ORDER BY upb.achieved_at DESC
+        LIMIT 10
+        """,
+        (uid,)
+    )
+    personal_bests = cur.fetchall()
+    
+    # Get current points
+    cur.execute("SELECT points FROM user_points WHERE user_id = %s", (uid,))
+    points_result = cur.fetchone()
+    current_points = points_result['points'] if points_result else 0
+    
     cur.close()
     conn.close()
-    return render_template('user/dashboard.html', games=rows)
+    return render_template('user/dashboard.html', games=games, personal_bests=personal_bests, current_points=current_points)
 
 @user_bp.route('/play/<path:game_file>')
 def play_game(game_file):
@@ -142,3 +164,31 @@ def get_profile_picture(user_id: int):
         return ('', 404)
     folder = current_app.config.get('UPLOAD_FOLDER_PROFILE')
     return send_from_directory(folder, row['profile_picture_path'])
+
+@user_bp.route('/points-history')
+def points_history():
+    uid = getattr(current_user, 'id', None) or session.get('user_id')
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+    
+    # Get current points
+    cursor.execute("SELECT points FROM user_points WHERE user_id = %s", (uid,))
+    current_points = cursor.fetchone()
+    current_points = current_points['points'] if current_points else 0
+    
+    # Get transaction history
+    cursor.execute("""
+        SELECT points, reason, created_at 
+        FROM points_transactions 
+        WHERE user_id = %s 
+        ORDER BY created_at DESC 
+        LIMIT 50
+    """, (uid,))
+    transactions = cursor.fetchall()
+    
+    cursor.close()
+    conn.close()
+    
+    return render_template('user/points_history.html', 
+                         current_points=current_points, 
+                         transactions=transactions)

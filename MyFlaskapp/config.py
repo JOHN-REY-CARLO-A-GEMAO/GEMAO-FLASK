@@ -21,7 +21,15 @@ _load_env()
 
 class Config:
     # General App Config
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        import warnings
+        warnings.warn(
+            'SECRET_KEY is not set. Using insecure default for development only. '
+            'Set the SECRET_KEY environment variable in production.',
+            UserWarning,
+        )
+        SECRET_KEY = 'dev-secret-key'
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
     # MySQL

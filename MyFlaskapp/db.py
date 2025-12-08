@@ -1,3 +1,4 @@
+import os
 import mysql.connector
 from mysql.connector import Error
 from .config import Config
@@ -111,19 +112,8 @@ def init_db_commands():
             )
         """)
 
-        # 8. Streaks Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS streaks (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                game_id INT NOT NULL,
-                streak_count INT NOT NULL DEFAULT 0,
-                last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-                UNIQUE KEY (user_id, game_id)
-            )
-        """)
+        # 8. Streaks Table - REMOVED (unused)
+        # Streaks table has been dropped as it's not implemented in frontend
 
         # 9. User Points Table
         cursor.execute("""
@@ -176,7 +166,7 @@ def init_db_commands():
                 ip_address VARCHAR(45),
                 user_agent VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP,
+                expires_at TIMESTAMP NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )
         """)
@@ -191,19 +181,7 @@ def init_db_commands():
             )
         """)
 
-        # 15. API Keys Table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS api_keys (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                key_hash VARCHAR(255) NOT NULL UNIQUE,
-                user_id INT,
-                permissions TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                expires_at TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        """)
-
+        
         # 16. Content Versions Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS content_versions (
@@ -274,24 +252,22 @@ def init_db_commands():
         # 6. Seed Admin
         cursor.execute("SELECT * FROM users WHERE role = 'Admin'")
         if not cursor.fetchone():
-            # Password: admin
-            # Use a proper hash in production. Here we use plain or handled by auth logic layer. 
-            # For this quick setup we'll assume the Auth blueprint handles hashing on register, 
-            # but we need a hardcoded admin. We'll use a placeholder hash or plain text and assume the auth system handles it.
-            # IMPORTANT: In a real app, hash this!
-            # Adding a default admin: admin / admin123
-            # We will use Werkzeug in the seeding or just insert. 
-            # Let's insert a raw record and assume the Auth system can handle it or we update it later.
-            try:
-                from werkzeug.security import generate_password_hash
-                hashed = generate_password_hash('admin123')
-                cursor.execute("""
-                    INSERT INTO users (username, password, email, firstname, lastname, role, is_active)
-                    VALUES ('admin', %s, 'admin@leafvillage.com', 'Super', 'Admin', 'Admin', TRUE)
-                """, (hashed,))
-                print("Seeded Admin account.")
-            except ImportError:
-                pass
+            # Seed admin only when explicitly enabled via env var `SEED_ADMIN` and with `ADMIN_PASSWORD`
+            seed_admin = os.environ.get('SEED_ADMIN', 'False').lower() in ('1', 'true', 'yes')
+            admin_password = os.environ.get('ADMIN_PASSWORD')
+            if seed_admin and admin_password:
+                try:
+                    from werkzeug.security import generate_password_hash
+                    hashed = generate_password_hash(admin_password)
+                    cursor.execute("""
+                        INSERT INTO users (username, password, email, firstname, lastname, role, is_active)
+                        VALUES ('admin', %s, 'admin@leafvillage.com', 'Super', 'Admin', 'Admin', TRUE)
+                    """, (hashed,))
+                    print("Seeded Admin account.")
+                except Exception:
+                    print("Failed to seed admin account.")
+            else:
+                print("Admin seed skipped. Set SEED_ADMIN=True and ADMIN_PASSWORD env vars to enable seeding.")
 
 
         conn.commit()
