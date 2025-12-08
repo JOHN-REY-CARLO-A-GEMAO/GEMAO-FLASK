@@ -51,11 +51,16 @@ def _validate_image(file_storage):
         return False, 'Unsupported file extension'
     try:
         file_storage.stream.seek(0)
-        img0 = Image.open(file_storage.stream)
-        orig_fmt = (img0.format or '').upper()
-        if orig_fmt and orig_fmt not in ALLOWED_FORMATS:
+        img = Image.open(file_storage.stream)
+        img.verify()  # Verify that this is a valid image
+        orig_fmt = (img.format or '').upper()
+        if not orig_fmt or orig_fmt not in ALLOWED_FORMATS:
             return False, 'Unsupported image format'
-        img = ImageOps.exif_transpose(img0)
+
+        # Re-open the image after verification
+        file_storage.stream.seek(0)
+        img = Image.open(file_storage.stream)
+        img = ImageOps.exif_transpose(img)
         w, h = img.size
         if w < MIN_DIM[0] or h < MIN_DIM[1]:
             return False, 'Image too small'
