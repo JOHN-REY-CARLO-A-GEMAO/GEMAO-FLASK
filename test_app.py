@@ -261,5 +261,18 @@ class FlaskAppTests(unittest.TestCase):
             }
             r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
             self.assertEqual(r.status_code, 400)
+    def test_log_audit_action_closes_connection_on_cursor_error(self):
+        from unittest.mock import patch, MagicMock
+        import MyFlaskapp.db as db
+        from mysql.connector import Error
+
+        mock_conn = MagicMock()
+        mock_conn.cursor.side_effect = Error("Simulated cursor error")
+
+        with patch('MyFlaskapp.db.get_db', return_value=mock_conn):
+            db.log_audit_action(1, 2, "test_action")
+
+        mock_conn.close.assert_called_once()
+
 if __name__ == '__main__':
     unittest.main()

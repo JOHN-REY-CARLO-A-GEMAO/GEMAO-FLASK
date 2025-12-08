@@ -287,6 +287,8 @@ def get_db():
     return conn
 
 def log_audit_action(actor_id: int | None, target_user_id: int | None, action: str, details: str = "") -> None:
+    conn = None
+    cursor = None
     try:
         conn = get_db()
         cursor = conn.cursor()
@@ -301,8 +303,7 @@ def log_audit_action(actor_id: int | None, target_user_id: int | None, action: s
     except Error as e:
         print(f"Audit log insert failed: {e}")
     finally:
-        try:
+        if cursor:
             cursor.close()
+        if conn and conn.is_connected():
             conn.close()
-        except Exception:
-            pass
