@@ -16,6 +16,16 @@
         <label class="form-label">Image Path</label>
         <input type="text" name="image_path" class="form-control" value="{{ request.form.image_path or game.image_path }}">
     </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control">{{ request.form.description or game.description }}</textarea>
+    </div>
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="is_enabled" id="is_enabled" {% if game.is_enabled %}checked{% endif %}>
+        <label class="form-check-label" for="is_enabled">
+            Enabled
+        </label>
+    </div>
     <button type="submit" class="btn btn-warning">Save</button>
     <a href="{{ url_for('admin.games_index') }}" class="btn btn-secondary">Cancel</a>
 </form>

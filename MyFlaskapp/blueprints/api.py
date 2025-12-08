@@ -89,7 +89,7 @@ def upload_profile_picture():
         return jsonify({'error': data}), 400
 
     img = data['image']
-    ext = data['ext']
+    ext = data['ext'].lower()
 
     folder = current_app.config.get('UPLOAD_FOLDER_PROFILE')
     os.makedirs(folder, exist_ok=True)
@@ -112,17 +112,22 @@ def upload_profile_picture():
     try:
         import MyFlaskapp.db as db
         conn = db.get_db()
-        cursor = conn.cursor()
-        cursor.execute(
-            """
-            UPDATE users SET profile_picture_path=%s, profile_picture_updated_at=NOW() WHERE id=%s
-            """,
-            (unique_name, uid)
-        )
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except Exception:
+        if conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE users SET profile_picture_path=%s, profile_picture_updated_at=NOW() WHERE id=%s
+                """,
+                (unique_name, uid)
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+        else:
+            current_app.logger.error("Could not get database connection.")
+            return jsonify({'error': 'Database connection error'}), 500
+    except Exception as e:
+        current_app.logger.error(f"Error updating profile picture path: {e}")
         try:
             os.remove(abs_path)
         except Exception:
