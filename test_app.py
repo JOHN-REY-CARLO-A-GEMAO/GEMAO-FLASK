@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash
 
 from MyFlaskapp import create_app
 import MyFlaskapp.db as db
+import MyFlaskapp.blueprints.api as api
 from itsdangerous import URLSafeTimedSerializer
 from io import BytesIO
 from PIL import Image
@@ -96,6 +97,7 @@ class FlaskAppTests(unittest.TestCase):
     def setUpClass(cls):
         db.get_db = fake_get_db
         db.init_db_commands = lambda: None
+        api._rate_limit_check = lambda key: True
         cls.app = create_app({'ENABLE_CSRF': False})
         cls.app.testing = True
         cls.client = cls.app.test_client()
@@ -211,6 +213,51 @@ class FlaskAppTests(unittest.TestCase):
             # upload a non-image / invalid file type
             data = {
                 'file': (BytesIO(b'not-an-image-content'), 'bad.txt')
+            }
+            r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
+            self.assertEqual(r.status_code, 400)
+
+    def test_upload_profile_picture_invalid_content(self):
+        with self.app.test_request_context('/'):
+            s = URLSafeTimedSerializer(self.app.config['SECRET_KEY'])
+            token = s.dumps('1')
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['user_id'] = 1
+                sess['loggedin'] = True
+            # upload a non-image file with a valid extension
+            data = {
+                'file': (BytesIO(b'this is not an image'), 'fake.jpg')
+            }
+            r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
+            self.assertEqual(r.status_code, 400)
+
+    def test_upload_profile_picture_zero_byte(self):
+        with self.app.test_request_context('/'):
+            s = URLSafeTimedSerializer(self.app.config['SECRET_KEY'])
+            token = s.dumps('1')
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['user_id'] = 1
+                sess['loggedin'] = True
+            data = {
+                'file': (BytesIO(b''), 'empty.jpg')
+            }
+            r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
+            self.assertEqual(r.status_code, 400)
+
+    def test_upload_profile_picture_corrupted(self):
+        with self.app.test_request_context('/'):
+            s = URLSafeTimedSerializer(self.app.config['SECRET_KEY'])
+            token = s.dumps('1')
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess['user_id'] = 1
+                sess['loggedin'] = True
+            # A valid PNG header with corrupted data
+            corrupted_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\x0cIDATx\x9cc`\x00\x00\x00\x02\x00\x01\xe2!\xbc\x33\x00\x00\x00\x00IEND\xaeB`\x82' + b'a' * 100
+            data = {
+                'file': (BytesIO(corrupted_data), 'corrupted.png')
             }
             r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
             self.assertEqual(r.status_code, 400)
