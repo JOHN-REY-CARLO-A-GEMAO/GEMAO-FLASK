@@ -94,7 +94,7 @@ def fake_get_db():
 class FlaskAppTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        db.get_db = fake_get_db
+        db.get_db_connection = fake_get_db
         db.init_db_commands = lambda: None
         cls.app = create_app({'ENABLE_CSRF': False})
         cls.app.testing = True
@@ -214,5 +214,15 @@ class FlaskAppTests(unittest.TestCase):
             }
             r = c.post('/api/users/upload-profile-picture', data=data, content_type='multipart/form-data', headers={'X-CSRFToken': token})
             self.assertEqual(r.status_code, 400)
+
+    def test_profile_update_future_birthdate(self):
+        self.client.post('/auth/login', data={'username': 'admin', 'password': 'admin123'})
+        from datetime import datetime, timedelta
+        future_date = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+        response = self.client.post('/user/profile', data={'birthdate': future_date}, follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        html = response.get_data(as_text=True)
+        self.assertIn('Birthdate cannot be in the future.', html)
+
 if __name__ == '__main__':
     unittest.main()

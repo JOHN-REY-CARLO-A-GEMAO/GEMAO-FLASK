@@ -130,6 +130,9 @@ def profile():
         if birthdate:
             bdate = datetime.strptime(birthdate, '%Y-%m-%d')
             today = datetime.today()
+            if bdate > today:
+                flash('Birthdate cannot be in the future.', 'danger')
+                return redirect(url_for('user.profile'))
             age = today.year - bdate.year - ((today.month, today.day) < (bdate.month, bdate.day))
         
         cursor.execute("""
