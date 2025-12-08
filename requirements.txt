@@ -3,5 +3,5 @@ Flask-Login
 Flask-Mail
 Flask-WTF
 mysql-connector-python
-Pillow
+Pillow>=10.0.0
 pygame
